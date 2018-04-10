@@ -47,6 +47,17 @@ class PlayerView: UIView {
         loadingActivityIndicator.startAnimating()
         
         if media?.type! == MediaType.youtubeVideo.rawValue {
+            // TODO: Taking this from the Android app... need to finish this up
+            /* Need to account for timestamps in youtube foreign key
+             * Can be like <key>?start=1h15m3s or <key>?t=time or <key>#t=time
+             * Since foreign key is first param in yt.com/watch?v=blah, others need to be &
+             */
+            /*
+            keyForUrl = foreignKey.replace('?', '&').replace('#', '&');
+            Matcher m = YOUTUBE_KEY_PATTERN.matcher(foreignKey);
+            String cleanKey = m.find() ? m.group(1) : foreignKey;
+            imageUrl = String.format(mediaType.getImageUrlPattern(), cleanKey);
+             */
             if let key = media?.key {
                 youtubePlayerView.load(withVideoId: key)
             }

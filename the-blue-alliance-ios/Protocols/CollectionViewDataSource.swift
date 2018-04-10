@@ -34,8 +34,8 @@ class CollectionViewDataSource<Result: NSFetchRequestResult, Delegate: Collectio
         super.init()
         fetchedResultsController.delegate = self
         try! fetchedResultsController.performFetch()
-        collectionView.dataSource = self
         DispatchQueue.main.async {
+            collectionView.dataSource = self
             self.collectionView.reloadData()
         }
     }

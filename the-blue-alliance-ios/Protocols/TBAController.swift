@@ -112,12 +112,14 @@ extension Persistable {
     }
     
     func removeNoDataView() {
-        if let tableView = dataView as? UITableView {
-            tableView.backgroundView = nil
-        } else if let collectionView = dataView as? UICollectionView {
-            collectionView.backgroundView = nil
-        } else {
-            noDataView?.removeFromSuperview()
+        DispatchQueue.main.async {
+            if let tableView = self.dataView as? UITableView {
+                tableView.backgroundView = nil
+            } else if let collectionView = self.dataView as? UICollectionView {
+                collectionView.backgroundView = nil
+            } else {
+                self.noDataView?.removeFromSuperview()
+            }
         }
     }
 
