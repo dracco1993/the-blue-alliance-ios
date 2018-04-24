@@ -11,6 +11,8 @@ import UIKit
 import CoreData
 import TBAKit
 import PureLayout
+import React
+import Firebase
 
 protocol Container {
     var viewControllers: [Persistable & Refreshable] { get set }
@@ -236,6 +238,46 @@ class TBAViewController: UIViewController, Persistable, Refreshable, Alertable {
     func shouldNoDataRefresh() -> Bool {
         fatalError("Implement this downstream")
     }
+}
+
+
+protocol ReactNative: RCTBridgeDelegate {
+    var reactBridge: RCTBridge { get }
+}
+
+extension ReactNative {
+    
+    // TODO: I can't seem to implement sourceURLForBridge: and fallbackSourceURLForBridge: in a protocol extension...
+    
+    var sourceURL: URL {
+        #if DEBUG
+            return debugSourceURL
+        #else
+            return onlineSourceURL
+        #endif
+    }
+    
+    fileprivate var onlineSourceURL: URL {
+        // Attempt to load from Firebase URL
+        // Otherwise, go to our fallback URL
+        if let url = UserDefaults.standard.url(forKey: kReactNativeBundleURL) {
+            return url
+        }
+        return fallbackSourceURL
+    }
+    
+    fileprivate var debugSourceURL: URL {
+        return URL(string: "https://zachorr.com")!
+        return URL(string: "http://localhost:8081/index.ios.bundle")!
+    }
+    
+    var fallbackSourceURL: URL {
+        if let downloadedBundleURL = downloadedBundleURL, let reachable = try? downloadedBundleURL.checkResourceIsReachable(), reachable == true {
+            return downloadedBundleURL
+        }
+        return Bundle.main.url(forResource: "main", withExtension: "jsbundle")!
+    }
+
 }
 
 class TBATableViewController: UITableViewController, Persistable, Refreshable, Alertable {

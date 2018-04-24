@@ -3,7 +3,7 @@ use_frameworks!
 
 target 'the-blue-alliance-ios' do
 
-  pod 'TBAKit'
+  pod 'TBAKit', :path => '~/Desktop/TBAKit'
   
   pod 'React', :path => 'js/node_modules/react-native', :subspecs => [
     'Core',
@@ -19,6 +19,14 @@ target 'the-blue-alliance-ios' do
 
   pod "youtube-ios-player-helper", "~> 0.1.4"
   pod 'PureLayout'
+
+  pod 'Firebase/Analytics'
+  pod 'Firebase/Core'
+  pod 'Firebase/Crash'
+  pod 'Firebase/Messaging'
+  pod 'Firebase/Performance'
+  pod 'Firebase/RemoteConfig'
+  pod 'Firebase/Storage'
 end
 
 post_install do | installer |

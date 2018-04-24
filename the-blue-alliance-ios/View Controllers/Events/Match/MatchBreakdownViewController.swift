@@ -12,9 +12,16 @@ import React
 import TBAKit
 import CoreData
 
-class MatchBreakdownViewController: TBAViewController, Observable {
+class MatchBreakdownViewController: TBAViewController, Observable, ReactNative {
     
     public var match: Match!
+    
+    // MARK: - React Native
+    
+    lazy internal var reactBridge: RCTBridge = {
+        return RCTBridge(delegate: self, launchOptions: [:])
+    }()
+    // TODO: This is getting added to our view hiearchy every time... fix that
     private var breakdownView: RCTRootView?
     
     // MARK: - Persistable
@@ -39,6 +46,9 @@ class MatchBreakdownViewController: TBAViewController, Observable {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // TODO: Move this... out. Somewhere else. In the ReactNative Protocol
+        NotificationCenter.default.addObserver(self, selector: #selector(showNoDataView), name: NSNotification.Name.RCTJavaScriptDidFailToLoad, object: nil)
+        
         styleInterface()
     }
     
@@ -57,31 +67,26 @@ class MatchBreakdownViewController: TBAViewController, Observable {
         
         // If the breakdown view already exists, don't set it up again
         // Only update the properties for the view
-        if let _ = breakdownView {
-            breakdownView?.appProperties = dataForBreakdown()
-            return
-        }
-
-        guard let jsCodeLocation = RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index.ios", fallbackResource: nil) else {
-            self.showNoDataView(with: "Unable to load breakdown")
+        if let breakdownView = breakdownView {
+            breakdownView.appProperties = dataForBreakdown()
             return
         }
 
         let initialProps = dataForBreakdown()
-        
         let moduleName = "MatchBreakdown\(match.event!.year)"
-        
-        guard let rootView = RCTRootView(bundleURL: jsCodeLocation, moduleName: moduleName, initialProperties: initialProps, launchOptions: [:]) else {
-            self.showNoDataView(with: "Unable to load breakdown")
+
+        guard let breakdownView = RCTRootView(bridge: reactBridge, moduleName: moduleName, initialProperties: initialProps) else {
+            showNoDataView(with: "Unable to load breakdown")
             return
         }
-        breakdownView = rootView
-        breakdownView!.delegate = self
-        breakdownView!.sizeFlexibility = .height
+        breakdownView.delegate = self
+        breakdownView.sizeFlexibility = .height
         
-        scrollView.addSubview(breakdownView!)
-        breakdownView!.autoMatch(.width, to: .width, of: scrollView)
-        breakdownView!.autoPinEdgesToSuperviewEdges()
+        removeNoDataView()
+        scrollView.addSubview(breakdownView)
+        
+        breakdownView.autoMatch(.width, to: .width, of: scrollView)
+        breakdownView.autoPinEdgesToSuperviewEdges()
     }
     
     // MARK: Private
@@ -104,6 +109,18 @@ class MatchBreakdownViewController: TBAViewController, Observable {
                 "compLevel": match.compLevel!]
     }
     
+    // MARK: - RCTBridgeDelegate
+    
+    func sourceURL(for bridge: RCTBridge!) -> URL! {
+        // Fetch JS bundle from web (or our local packager, if we're running in debug mode)
+        return sourceURL
+    }
+    
+    func fallbackSourceURL(for bridge: RCTBridge!) -> URL! {
+        // Fallback to locally shipped JS
+        return fallbackSourceURL
+    }
+    
     // MARK: Refresh
     
     override func shouldNoDataRefresh() -> Bool {
@@ -111,6 +128,8 @@ class MatchBreakdownViewController: TBAViewController, Observable {
     }
     
     override func refresh() {
+        // TODO: We're removing our breakdown no data view on a refresh, but never re-inserting it when we need it (ex, we do a refresh and there's still no data....)
+        // I suspect we're doing this pattern other places and it's fucking us up
         removeNoDataView()
         
         var request: URLSessionDataTask?
@@ -134,6 +153,10 @@ class MatchBreakdownViewController: TBAViewController, Observable {
             })
         })
         addRequest(request: request!)
+    }
+    
+    @objc func showNoDataView() {
+        showNoDataView(with: "No match breakdown for event")
     }
     
 }
